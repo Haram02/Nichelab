@@ -17,7 +17,7 @@ export function createAccessAPI(fetcher=fetch){
       if (!result.ok) throw Object.assign(
      Error('Supabase request failed: HTTP ' + result.status),
      { providerStatus: result.status }
-   );throw Object.assign(Error('Supabase request failed: HTTP ' + result.status)),{providerStatus:result.status});
+   );
    if(result.status===204)return null;return result.json();
   }
   try{
