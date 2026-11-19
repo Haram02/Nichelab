@@ -14,10 +14,7 @@ export function createAccessAPI(fetcher=fetch){
   if(!authorization?.match(/^Bearer [^\s]+$/))return reply({error:'Sign in required.'},401);
   async function provider(path,{method='GET',body,service=false,headers={}}={}){
    const result=await fetcher(env.SUPABASE_URL+path,{method,headers:{apikey:service?env.SUPABASE_SERVICE_ROLE_KEY:env.SUPABASE_ANON_KEY,Authorization:service?'Bearer '+env.SUPABASE_SERVICE_ROLE_KEY:authorization,'Content-Type':'application/json',...headers},body:body===undefined?undefined:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
-      if (!result.ok) throw Object.assign(
-     Error('Supabase request failed: HTTP ' + result.status),
-     { providerStatus: result.status }
-   );
+   if(!result.ok)throw Object.assign(Error('Supabase request failed: HTTP '+result.status),{providerStatus:result.status});
    if(result.status===204)return null;return result.json();
   }
   try{
@@ -56,6 +53,6 @@ export function createAccessAPI(fetcher=fetch){
     return reply({updated:true});
    }
    return reply({error:'Not found.'},404);
-  }catch(error){return reply({error:error instanceof SyntaxError?'Invalid JSON.':(error.providerStatus ? 'Supabase request failed: HTTP ' + error.providerStatus : 'Account operation failed.')},error instanceof SyntaxError?400:502)}
+  }catch(error){return reply({error:error instanceof SyntaxError?'Invalid JSON.':(error.providerStatus?'Supabase request failed: HTTP '+error.providerStatus:'Account operation failed. Check the provider before retrying an invitation.')},error instanceof SyntaxError?400:502)}
  };
 }

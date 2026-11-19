@@ -20,7 +20,7 @@ export function createEtsyClient(env){
   if(!env.ETSY_KEYSTRING||!env.ETSY_SHARED_SECRET){const e=Error('Etsy credentials are not configured.');e.status=503;throw e}
   const key=env.ETSY_KEYSTRING+':'+path,cached=cache.get(key);if(!fresh&&cached&&cached.expires>Date.now())return cached.data;
   if(upstreamCalls>=40)throw Error('Shop enrichment limit reached for this request. Use a 20-listing sample for complete shop lookups.');upstreamCalls++;
-  if(env.DB)await reserveEtsyRequest(env.DB);
+  if(env.RESERVE_ETSY)await env.RESERVE_ETSY();else if(env.DB)await reserveEtsyRequest(env.DB);
   const r=await pacedFetch(`https://openapi.etsy.com/v3/application/${path}`,{headers:{'x-api-key':`${env.ETSY_KEYSTRING}:${env.ETSY_SHARED_SECRET}`},signal:AbortSignal.timeout(10000)});
   const remaining=r.headers.get('x-remaining-today');if(remaining!==null)client.quota={remaining_today:Number(remaining),limit_per_day:Number(r.headers.get('x-limit-per-day')||5000)};
   if(!r.ok){const error=new Error(r.status===429?'Etsy rate limit reached. Retry later; this app has a 5,000-request daily allowance.':`Etsy returned HTTP ${r.status}. Check app access; the listing may be unavailable.`);error.status=r.status;throw error;}
@@ -50,6 +50,8 @@ export default {async fetch(request,env){
   }catch(e){return json({error:e.message||'Unable to reach Etsy. Try again later.'},e.status===429?429:e.status===503?503:502)}
  }
  if(url.pathname==='/downloads/niche-lab-etsy-extension.zip'){const bytes=Uint8Array.from(atob(EXTZIP),c=>c.charCodeAt(0));return new Response(bytes,{headers:{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="niche-lab-etsy-extension.zip"','Cache-Control':'no-store'}})}
+ if(url.pathname==='/downloads/niche-lab-member-integration.zip'){const bytes=Uint8Array.from(atob(INTEGRATIONZIP),c=>c.charCodeAt(0));return new Response(bytes,{headers:{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="niche-lab-member-integration.zip"','Cache-Control':'no-store'}})}
+ if(url.pathname==='/downloads/niche-lab-member-migration.sql')return new Response(INTEGRATIONSQL,{headers:{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':'attachment; filename="niche-lab-member-migration.sql"','Cache-Control':'no-store'}});
  if(url.pathname==='/downloads/niche-lab-source.zip'){const bytes=Uint8Array.from(atob(SOURCEZIP),c=>c.charCodeAt(0));return new Response(bytes,{headers:{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="niche-lab-source.zip"','Cache-Control':'no-store'}})}
  if(url.pathname==='/downloads/niche-lab-supabase-schema.sql')return new Response(SUPABASESCHEMA,{headers:{'Content-Type':'text/plain; charset=utf-8','Content-Disposition':'attachment; filename="niche-lab-supabase-schema.sql"','Cache-Control':'no-store'}});
  if(url.pathname==='/downloads/niche-lab-account-staging.zip'){const bytes=Uint8Array.from(atob(ACCOUNTZIP),c=>c.charCodeAt(0));return new Response(bytes,{headers:{'Content-Type':'application/zip','Content-Disposition':'attachment; filename="niche-lab-account-staging.zip"','Cache-Control':'no-store'}})}
