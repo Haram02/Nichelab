@@ -1,0 +1,16 @@
+{
+  "name": "etsy-niche-lab",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "test": "node --test tests.mjs cloud.test.mjs research.test.mjs extension.test.mjs extension-content.test.mjs sales-model.test.mjs",
+    "db:generate": "drizzle-kit generate",
+    "extension:package": "python scripts/package-extension.py",
+    "model:evaluate": "node scripts/evaluate-sales-model.mjs"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2"
+  }
+}

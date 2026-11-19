@@ -1,0 +1,15 @@
+{
+  "name": "niche-lab-account-staging",
+  "main": "worker.js",
+  "compatibility_date": "2026-11-19",
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "vars": {
+    "APP_ORIGIN": "https://YOUR-STAGING-DOMAIN",
+    "SUPABASE_URL": "https://xkivkdoxetsktejfvout.supabase.co",
+    "SUPABASE_ANON_KEY": "sb_publishable_6-l8H9c5P2T6zcsrweVNVA_fOlsBL6l"
+  }
+}

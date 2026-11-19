@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1794737842523,
+      "tag": "0000_productive_chimera",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1794739601907,
+      "tag": "0001_complex_naoko",
+      "breakpoints": true
+    }
+  ]
+}

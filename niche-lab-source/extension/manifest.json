@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "Niche Lab for Etsy",
+  "version": "1.3.2",
+  "description": "Experimental review-based Etsy sales estimates with public favorites and shop metrics. Accuracy against real orders is unvalidated.",
+  "minimum_chrome_version": "109",
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://etsy-niche-lab-personal.jovialghost256.chatgpt.site/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Niche Lab for Etsy"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.etsy.com/*",
+        "https://etsy.com/*"
+      ],
+      "js": [
+        "content-core.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://etsy-niche-lab-personal.jovialghost256.chatgpt.site/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
