@@ -1,5 +1,10 @@
 import {getSalesEstimate} from './sales-model.js';
 import {weeklyMetrics} from './cloud.js';
+export function listingPublishedAt(listing){
+ const seconds=listing.original_creation_timestamp;
+ const date=new Date(seconds*1000);
+ return Number.isFinite(seconds)&&seconds>0&&Number.isFinite(date.getTime())?date.toISOString():null;
+}
 export async function extensionRoute(request,env,client,normalize){
  const url=new URL(request.url);if(url.pathname!=='/api/extension/metrics')return null;
  const reply=(v,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store'}});
@@ -17,6 +22,6 @@ export async function extensionRoute(request,env,client,normalize){
    }
   }
   const salesEstimate=await getSalesEstimate({listing:item,shop,client});
-  return reply({sales_estimate:salesEstimate,listing:normalize(item,shop),tracked,total_units_sold:null,weekly_units_sold:null,sales_availability:'Exact competitor listing sales are not disclosed by Etsy. Shop totals and stock changes cannot establish product units sold.',weekly:{...weeklyMetrics(latest,baseline),history_days:historyDays,last_snapshot:latest?.observed_at||null},warnings,cache_note:'Public listing data may be cached for up to 5 minutes; shop data for up to 15 minutes. Weekly activity uses recorded daily snapshots.'});
+  return reply({sales_estimate:salesEstimate,listing:{...normalize(item,shop),published_at:listingPublishedAt(item)},tracked,total_units_sold:null,weekly_units_sold:null,sales_availability:'Exact competitor listing sales are not disclosed by Etsy. Shop totals and stock changes cannot establish product units sold.',weekly:{...weeklyMetrics(latest,baseline),history_days:historyDays,last_snapshot:latest?.observed_at||null},warnings,cache_note:'Public listing data may be cached for up to 5 minutes; shop data for up to 15 minutes. Weekly activity uses recorded daily snapshots.'});
  }catch(e){return reply({error:e.message||'Unable to load public Etsy metrics.'},e.status===429?429:e.status===503?503:502)}
 }

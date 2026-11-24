@@ -11,6 +11,8 @@ function provider({suspended=false,role='member'}={}){const calls=[];const fetch
  if(url.includes('/rpc/market_reserve'))return Response.json(1);
  if(url.includes('/market_watchlists?'))return Response.json([{user_id:A,kind:'listing',item_key:'123',payload:{listing_id:123,title:'Private item',favorites:4},observed_at:new Date().toISOString()}]);
  if(url.includes('/market_snapshots?'))return Response.json([]);
+ if(url.endsWith('/listings/123'))return Response.json({listing_id:123,original_creation_timestamp:1732406400,creation_timestamp:1795478400});
+ if(url.endsWith('/listings/124'))return Response.json({listing_id:124,creation_timestamp:1795478400});
  if(url.startsWith('https://openapi.etsy.com/'))return Response.json({results:[]});
  if(['POST','PATCH','DELETE'].includes(options.method))return new Response(null,{status:204});
  return Response.json([]);
@@ -30,3 +32,16 @@ test('collector uses a per-user lease and releases it even when Etsy fails',asyn
 test('the dashboard and member extension return the same formula result from the shared model',async()=>{const source=await import('./market-server.js');const result=source.buildSalesEstimate({shop_sales:2000,shop_all_reviews:100,listing_all_reviews:36,listing_reviews_7d:1,listing_reviews_30d:2,listing_favorites:568});assert.equal(result.lifetime.estimate,286);assert.equal(result.days_7.estimate,4);assert.equal(result.days_30.estimate,8)});
 test('member profile cannot be promoted through a request body and unsafe methods are origin checked',async()=>{const {fetcher,calls}=provider();const old=globalThis.fetch;globalThis.fetch=fetcher;try{const r=await portalFetch(req('/api/accounts/invite',{method:'POST',body:{email:'guest@example.test',role:'owner',user_id:B}}),env);assert.equal(r.status,403);const count=calls.length;const cross=await portalFetch(req('/api/watchlist/listings',{method:'POST',body:{listing_id:123},origin:'https://evil.test'}),env);assert.equal(cross.status,403);assert.equal(calls.slice(count).some(c=>c.url.includes('market_save')),false)}finally{globalThis.fetch=old}});
 test('keyword discovery preserves existing observations and queues new listings for enrichment',async()=>{const calls=[];const fetcher=async(url,options={})=>{calls.push({url,options});if(url.includes('/market_watchlists?'))return Response.json([{kind:'keyword',item_key:'test',observed_at:null},{kind:'listing',item_key:'123',observed_at:new Date().toISOString()}]);if(url.includes('/rpc/market_lease'))return Response.json(true);return new Response(null,{status:204})};const cloud=new PrivateCloud(env,A,{get:async()=>({results:[{listing_id:123},{listing_id:456}]})},listing=>({listing_id:listing.listing_id,favorites:8}),()=>{},fetcher);await cloud.step();const saves=calls.filter(c=>c.url.includes('market_save'));assert.equal(saves.length,1);const body=JSON.parse(saves[0].options.body);assert.equal(String(body.p_key),'456');assert.equal(body.p_payload._pending,true);assert.equal(calls.some(c=>c.url.includes('/market_snapshots')),false)});
+
+test('member metrics expose the original listing date when Etsy supplies it',async()=>{
+ const {fetcher}=provider();
+ const old=globalThis.fetch;globalThis.fetch=fetcher;
+ try{
+  const configured={...env,ETSY_KEYSTRING:'test-key',ETSY_SHARED_SECRET:'test-secret'};
+  for(const [id,date] of [[123,'2024-11-24T00:00:00.000Z'],[124,null]]){
+   const reply=await portalFetch(req('/api/extension/metrics?id='+id),configured);
+   assert.equal(reply.status,200);
+   assert.equal((await reply.json()).listing.published_at,date);
+  }
+ }finally{globalThis.fetch=old}
+});
