@@ -1,4 +1,4 @@
-import market,{createEtsyClient,normalize,normalizeShop,getSalesEstimate,weeklyMetrics} from './market-server.js';
+import market,{createEtsyClient,normalize,normalizeShop,getSalesEstimate,weeklyMetrics,listingPublishedAt} from './market-server.js';
 import {createAccessAPI} from '../access-api.js';
 import {identity,sessionRoute,attachCookies,requireOrigin,sb,SessionError} from './session.js';
 import {PrivateCloud} from './private-cloud.js';
@@ -23,7 +23,7 @@ export async function portalFetch(request,env){
    const id=url.searchParams.get('id');if(!/^\d+$/.test(id||'')||!Number.isSafeInteger(Number(id))||Number(id)<=0)throw new SessionError('Invalid listing ID.',400);
    const listing=await client.get('listings/'+id);let shop=null;try{shop=await client.get('shops/'+listing.shop_id)}catch(e){if(e.status===429)throw e}
    const row=normalize(listing,shop),tracked=(await cloud.items()).some(i=>i.kind==='listing'&&i.item_key===id),history=tracked?await cloud.history('listing',id):[],latest=history.at(-1),baseline=latest?history.find(r=>new Date(latest.day)-new Date(r.day)===7*86400000):null;
-   return finish(response({account_id:auth.user.id,listing:row,sales_estimate:await getSalesEstimate({listing,shop,client}),tracked,total_units_sold:null,weekly_units_sold:null,weekly:{...weeklyMetrics(latest,baseline),history_days:history.length,last_snapshot:latest?.observed_at||null},warnings:[],cache_note:'Authenticated private watchlist. Etsy metrics may be cached; review cutoff shown in model evidence.'}));
+   return finish(response({account_id:auth.user.id,listing:{...row,published_at:listingPublishedAt(listing)},sales_estimate:await getSalesEstimate({listing,shop,client}),tracked,total_units_sold:null,weekly_units_sold:null,weekly:{...weeklyMetrics(latest,baseline),history_days:history.length,last_snapshot:latest?.observed_at||null},warnings:[],cache_note:'Authenticated private watchlist. Etsy metrics may be cached; review cutoff shown in model evidence.'}));
   }
   if(path==='/dashboard'||path==='/dashboard.js'){const mapped=new URL(request.url);mapped.pathname=path==='/dashboard'?'/':'/app.js';return finish(await market.fetch(new Request(mapped,request),{...env,DB:undefined}))}
   if(path==='/downloads/niche-lab-etsy-extension.zip')return finish(await env.ASSETS.fetch(new Request(url.origin+'/extension.zip',request)));
